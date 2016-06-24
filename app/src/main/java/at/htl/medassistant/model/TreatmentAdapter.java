@@ -29,8 +29,17 @@ public class TreatmentAdapter extends RecyclerView.Adapter<TreatmentAdapter.MyVi
     private List<Treatment> treatmentList;
     private Context context;
 
+    public static String EDIT_MEDICENAME = "Medicinename";
+    public static String EDIT_PERIODICITY_IN_DAYS = "periodicityInDays";
+    public static String EDIT_ACTIVE_SUBSTANCE = "ActiveSubstance";
+    public static String EDIT_STARTDATE = "Startdate";
+    public static String EDIT_ENDDATE = "Enddate";
+    public static String EDIT_TIME_OF_TAKING = "TimeOfTaking";
+    public static String EDIT_MEDICINE_TYPE = "MedicineType";
+    public static String EDIT_NOTE = "Note";
+
     static class MyViewHolder extends RecyclerView.ViewHolder {
-        public TextView name, activeSubstance, startdate, enddate, timeOfTaking, periodicityInDays, medType;
+        public TextView name, activeSubstance, startdate, enddate, timeOfTaking, periodicityInDays, medType, note;
         public TextView labelName, labelActiveSubstance, labelStartDate, labelEnddate, labelTimeOfTaking, labelPeriodicityInDays;
         private Button itemMenuButton;
 
@@ -44,6 +53,7 @@ public class TreatmentAdapter extends RecyclerView.Adapter<TreatmentAdapter.MyVi
             this.startdate = (TextView) view.findViewById(R.id.tvStartDate);
             this.enddate = (TextView) view.findViewById(R.id.tvEndDate);
             this.timeOfTaking = (TextView) view.findViewById(R.id.tvTimeOfTaking);
+            this.note = (TextView) view.findViewById(R.id.tvNote);
 
             this.labelName = (TextView) view.findViewById(R.id.lableMedicineName);
             this.labelStartDate = (TextView) view.findViewById(R.id.lableStartDate);
@@ -79,23 +89,24 @@ public class TreatmentAdapter extends RecyclerView.Adapter<TreatmentAdapter.MyVi
                                     }
                                     break;
                                 case R.id.EditItem:
-
                                     //Toast.makeText(view.getContext(), "Edit "+name.getText().toString(), Toast.LENGTH_SHORT).show();
                                     Treatment treatment = new Treatment(
                                             db.findUserById(db.findCurrentUserId()),
                                             db.findMedicineByName(name.getText().toString()),
                                             startdate.getText().toString(),
                                             enddate.getText().toString(),
-                                            timeOfTaking.getText().toString());
+                                            timeOfTaking.getText().toString(),
+                                            note.getText().toString());
 
                                     Intent intent = new Intent(view.getContext(), MedicineDetailsActivity.class);
-                                    intent.putExtra("Medicinename", treatment.getMedicine().getName());
-                                    intent.putExtra("periodicityInDays", treatment.getMedicine().getPeriodicityInDays()+"");
-                                    intent.putExtra("ActiveSubstance", treatment.getMedicine().getActiveSubstance());
-                                    intent.putExtra("Startdate", treatment.getStartDateToString());
-                                    intent.putExtra("Enddate", treatment.getEndDateToString());
-                                    intent.putExtra("TimeOfTaking", treatment.getTimeOfTakingToString());
-                                    intent.putExtra("MedicineType", treatment.getMedicine().getMedType().toString());
+                                    intent.putExtra(EDIT_MEDICENAME, treatment.getMedicine().getName());
+                                    intent.putExtra(EDIT_PERIODICITY_IN_DAYS, treatment.getMedicine().getPeriodicityInDays()+"");
+                                    intent.putExtra(EDIT_ACTIVE_SUBSTANCE, treatment.getMedicine().getActiveSubstance());
+                                    intent.putExtra(EDIT_STARTDATE, treatment.getStartDateToString());
+                                    intent.putExtra(EDIT_ENDDATE, treatment.getEndDateToString());
+                                    intent.putExtra(EDIT_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
+                                    intent.putExtra(EDIT_MEDICINE_TYPE, treatment.getMedicine().getMedType().toString());
+                                    intent.putExtra(EDIT_NOTE, treatment.getNote().toString());
 
                                     view.getContext().startActivity(intent);
 
@@ -136,6 +147,7 @@ public class TreatmentAdapter extends RecyclerView.Adapter<TreatmentAdapter.MyVi
         holder.enddate.setText(treatment.getEndDateToString());
         holder.timeOfTaking.setText(treatment.getTimeOfTakingToString());
         holder.medType.setText(treatment.getMedicine().getMedType().toString());
+        holder.note.setText(treatment.getNote());
 
         if (treatment.getMedicine().getMedType().equals(MedType.PHARMACEUTICAL)) {
             holder.labelStartDate.setVisibility(View.GONE);

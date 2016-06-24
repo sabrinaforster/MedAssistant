@@ -7,6 +7,8 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
@@ -71,13 +73,16 @@ public class LocalService extends Service{
             calender.set(Calendar.MINUTE, calender.get(Calendar.MINUTE));
             calender.set(Calendar.SECOND, 0);
 
+            Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
             Notification notification = new Notification.Builder(this)
                     .setSmallIcon(R.drawable.medassistant_small_icon)
-                    .setTicker("Ticker")
                     .setWhen(calender.getTimeInMillis()) //System.currentTimeMillis()
-                    .setContentTitle("You have to take " + treatment.getMedicine().getName() + " now.")
-                    .setContentText("Choose Later or Taken")
+                    .setContentTitle(getString(R.string.notification_title1) + treatment.getMedicine().getName() + getString(R.string.notification_title2))
+                    .setContentText(getString(R.string.notification_content))
                     .setContentIntent(contentIntent)
+                    .setSound(alarmSound)
+                    .setVibrate(new long[]{1000, 1000})
                     .build();
 
             notificationManager.notify(NOTIFICATION, notification);

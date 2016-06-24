@@ -91,7 +91,10 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onLongClick(View view, int position) {
-
+                Treatment treatment = db.getTreatments().get(position);
+                if (treatment.getNote().length() > 0) {
+                    Toast.makeText(boundService, getString(R.string.note) + ": "+treatment.getNote(), Toast.LENGTH_LONG).show();
+                }
             }
         }));
 

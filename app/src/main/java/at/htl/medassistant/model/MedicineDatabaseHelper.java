@@ -177,6 +177,7 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
         contentValues.put(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
         contentValues.put(Contract.TreatmentEntry.COLUMN_MEDICINE_ID, medicine.getId());
         contentValues.put(Contract.TreatmentEntry.COLUMN_USER_ID, user.getId()); //medicineid
+        contentValues.put(Contract.TreatmentEntry.COLUMN_NOTE, treatment.getNote());
 
         return this.getWritableDatabase().insertOrThrow(Contract.TreatmentEntry.TABLE_NAME, null, contentValues);
 
@@ -338,8 +339,10 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
                 String startDate = cursor.getString(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_START_DATE));
                 String endDate = cursor.getString(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_END_DATE));
                 String timeOfTaking = cursor.getString(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING));
+                String note = cursor.getString(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_NOTE));
 
-                Treatment treatment = new Treatment(user, medicine, startDate, endDate, timeOfTaking);
+                Treatment treatment = new Treatment(user, medicine, startDate, endDate, timeOfTaking, note);
+
                 treatments.add(treatment);
 
                 cursor.moveToNext();
@@ -502,6 +505,7 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
             cv.put(Contract.TreatmentEntry.COLUMN_START_DATE, treatment.getStartDateToString());
             cv.put(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
             cv.put(Contract.TreatmentEntry.COLUMN_USER_ID, treatment.getUser().getId());
+            cv.put(Contract.TreatmentEntry.COLUMN_NOTE, treatment.getNote());
 
             ContentValues contentValues = new ContentValues();
             contentValues.put(Contract.MedicineEntry.COLUMN_NAME, treatment.getMedicine().getName());

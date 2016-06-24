@@ -40,5 +40,10 @@
     <string name="title_activity_notification_screen">NotificationScreen</string>
     <string name="notification_later">Later</string>
     <string name="userName">Username</string>
+    <string name="notification_title1">You have to take</string>
+    <string name="notification_title2">now.</string>
+    <string name="notification_content">Choose Later or Taken</string>
+    <string name="hint_notes">Notes</string>
+    <string name="note">Note</string>
 
 </resources>

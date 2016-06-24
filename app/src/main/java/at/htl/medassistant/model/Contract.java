@@ -31,7 +31,8 @@ public class Contract {
                 TreatmentEntry.COLUMN_USER_ID + " integer, "+
                 TreatmentEntry.COLUMN_START_DATE +" text, "+
                 TreatmentEntry.COLUMN_END_DATE + " text, "+
-                    TreatmentEntry.COLUMN_TIME_OF_TAKING + " text, "+
+                    TreatmentEntry.COLUMN_TIME_OF_TAKING + " text, " +
+                    TreatmentEntry.COLUMN_NOTE + " text, " +
                     "primary key (" + TreatmentEntry.COLUMN_MEDICINE_ID +
                     ", " + TreatmentEntry.COLUMN_USER_ID +"))";
 
@@ -75,6 +76,7 @@ public class Contract {
         public static final String COLUMN_START_DATE = "startdate";
         public static final String COLUMN_END_DATE = "enddate";
         public static final String COLUMN_TIME_OF_TAKING = "time_of_taking";
+        public static final String COLUMN_NOTE = "note";
     }
 
 

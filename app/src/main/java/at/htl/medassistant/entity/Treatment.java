@@ -22,6 +22,7 @@ public class Treatment implements Comparable<Treatment> {
     private Date startDate;
     private Date endDate;
     private Time timeOfTaking; //time per day  HHMM
+    private String note;
 
     private Medicine medicine;
     private User user;
@@ -45,6 +46,15 @@ public class Treatment implements Comparable<Treatment> {
         //medicine.setPeriodicityInDays(getDaysBetween());
         this.medicine = medicine;
 
+    }
+
+    public Treatment(User user, Medicine medicine, String startDate, String endDate, String timeOfTaking, String note) {
+        setStartDate(startDate);
+        setEndDate(endDate);
+        setTimeOfTaking(timeOfTaking);
+        this.user = user;
+        this.medicine = medicine;
+        this.note = note;
     }
 
     private int getDaysBetween() {
@@ -207,6 +217,17 @@ public class Treatment implements Comparable<Treatment> {
         } catch (ParseException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getNote() {
+        if (note == null) {
+            return "";
+        }
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 }
 

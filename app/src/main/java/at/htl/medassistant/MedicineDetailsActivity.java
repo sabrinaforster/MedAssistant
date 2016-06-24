@@ -31,6 +31,7 @@ import at.htl.medassistant.entity.Medicine;
 import at.htl.medassistant.entity.Treatment;
 import at.htl.medassistant.entity.User;
 import at.htl.medassistant.model.MedicineDatabaseHelper;
+import at.htl.medassistant.model.TreatmentAdapter;
 
 public class MedicineDetailsActivity extends AppCompatActivity {
 
@@ -42,6 +43,7 @@ public class MedicineDetailsActivity extends AppCompatActivity {
     private EditText endDate;
     private EditText timeOfTaking;
     private EditText periodicityInDays;
+    private EditText note;
     private Button saveButton;
 
     private Button buttonStartDate;
@@ -75,6 +77,7 @@ public class MedicineDetailsActivity extends AppCompatActivity {
         endDate = (EditText) findViewById(R.id.editTextEndDate);
         timeOfTaking = (EditText) findViewById(R.id.editTextTimeOfTaking);
         periodicityInDays = (EditText) findViewById(R.id.editTextPeriodicityInDays);
+        note = (EditText) findViewById(R.id.editTextNotes);
 
         rbPharmaceutical = (RadioButton) findViewById(R.id.radioButtonPharmaceutical);
         rbPharmaceutical.setChecked(true);
@@ -168,12 +171,14 @@ public class MedicineDetailsActivity extends AppCompatActivity {
         Intent intent = getIntent();
 
         if (intent.getExtras() != null) {
-            name.setText(intent.getStringExtra("Medicinename"));
-            periodicityInDays.setText(intent.getStringExtra("periodicityInDays"));
-            activeSubstance.setText(intent.getStringExtra("ActiveSubstance"));
-            startDate.setText(intent.getStringExtra("Startdate"));
-            endDate.setText(intent.getStringExtra("Enddate"));
-            timeOfTaking.setText(intent.getStringExtra("TimeOfTaking"));
+            name.setText(intent.getStringExtra(TreatmentAdapter.EDIT_MEDICENAME));
+            periodicityInDays.setText(intent.getStringExtra(TreatmentAdapter.EDIT_PERIODICITY_IN_DAYS));
+            activeSubstance.setText(intent.getStringExtra(TreatmentAdapter.EDIT_ACTIVE_SUBSTANCE));
+            startDate.setText(intent.getStringExtra(TreatmentAdapter.EDIT_STARTDATE));
+            endDate.setText(intent.getStringExtra(TreatmentAdapter.EDIT_ENDDATE));
+            timeOfTaking.setText(intent.getStringExtra(TreatmentAdapter.EDIT_TIME_OF_TAKING));
+            note.setText(intent.getStringExtra(TreatmentAdapter.EDIT_NOTE));
+
             String medtype = intent.getStringExtra("MedicineType");
             if (medtype.equals("PHARMACEUTICAL")) {
                 rbPharmaceutical.setChecked(true);
@@ -182,7 +187,6 @@ public class MedicineDetailsActivity extends AppCompatActivity {
             }
 
             MedicineDatabaseHelper db = MedicineDatabaseHelper.getInstance(this);
-
             medicineIdEdit = db.findMedicineByName(name.getText().toString()).getId();
         }
 
@@ -391,7 +395,7 @@ public class MedicineDetailsActivity extends AppCompatActivity {
             }
         }
 
-        Treatment treatment = new Treatment(user, medicine, startDate.getText().toString(), endDate.getText().toString(), timeOfTaking.getText().toString());
+        Treatment treatment = new Treatment(user, medicine, startDate.getText().toString(), endDate.getText().toString(), timeOfTaking.getText().toString(), note.getText().toString());
 
         try {
             if (getIntent().getExtras() == null) {
