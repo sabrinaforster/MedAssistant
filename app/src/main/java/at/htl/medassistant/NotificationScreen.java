@@ -27,6 +27,7 @@ public class NotificationScreen extends AppCompatActivity {
             public void onClick(View v) {
                 intent.setFlags(R.id.fabLater);
                 getBaseContext().startService(intent);
+                finish();
             }
         });
 
@@ -35,6 +36,7 @@ public class NotificationScreen extends AppCompatActivity {
             public void onClick(View v) {
                 intent.setFlags(R.id.fabTaken);
                 getBaseContext().startService(intent);
+                finish();
             }
         });
 

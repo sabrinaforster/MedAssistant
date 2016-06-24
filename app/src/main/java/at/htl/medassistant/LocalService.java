@@ -18,10 +18,6 @@ import java.util.Date;
 import at.htl.medassistant.entity.Treatment;
 import at.htl.medassistant.model.MedicineDatabaseHelper;
 
-/**
- * Created by Sabrina on 14.06.2016.
- */
-
 public class LocalService extends Service{
     private NotificationManager notificationManager;
     private int NOTIFICATION = 1;
@@ -34,6 +30,7 @@ public class LocalService extends Service{
         LocalService getService(){return LocalService.this;}
     }
 
+    ///// TODO: Later
     @Override
     public void onCreate() {
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -48,12 +45,13 @@ public class LocalService extends Service{
             intent.setFlags(1);
         }
         if (intent != null && intent.getFlags() == R.id.fabLater) { //NotificationScreen, Later
-            Toast.makeText(this, "Later", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.notification_later), Toast.LENGTH_SHORT).show();
             intent.setFlags(1);
+            //this.destroyAndCreateNewNotification();
 
         }
         if (intent != null && intent.getFlags() == R.id.fabTaken) { //NotificationScreen, Taken
-            Toast.makeText(this, "Taken", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.taken), Toast.LENGTH_SHORT).show();
             this.destroyAndCreateNewNotification();
             intent.setFlags(1);
         }
@@ -73,8 +71,6 @@ public class LocalService extends Service{
             calender.set(Calendar.MINUTE, calender.get(Calendar.MINUTE));
             calender.set(Calendar.SECOND, 0);
 
-            PendingIntent takenIntent = getTakenIntent();
-
             Notification notification = new Notification.Builder(this)
                     .setSmallIcon(R.drawable.medassistant_small_icon)
                     .setTicker("Ticker")
@@ -86,15 +82,6 @@ public class LocalService extends Service{
 
             notificationManager.notify(NOTIFICATION, notification);
         }
-    }
-
-    //Funktioniert noch nicht
-    private PendingIntent getTakenIntent() {
-        Intent intent = new Intent();
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        intent.putExtra("NOTIFICATION_ID", NOTIFICATION);
-        PendingIntent takenIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-        return takenIntent;
     }
 
     public void destroyAndCreateNewNotification(){

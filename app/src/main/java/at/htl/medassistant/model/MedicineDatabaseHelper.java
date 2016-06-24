@@ -434,16 +434,21 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
     private List<Treatment> getListToday(List<Treatment> treatmentList, Calendar c) {
         Date nowDate = new Date(c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
         nowDate.setYear(116);
-        //Date nowDate = new Date(2016, 4, 16);
         List<Treatment> newTreatmentList = new ArrayList<>();
         for(Treatment t: treatmentList){
             if(t.getStartDate().before(nowDate) && nowDate.before(t.getEndDate()) ||
                     sameDate(t.getStartDate(),nowDate) ||
                     sameDate(t.getEndDate(), nowDate)){
-                //if (t.getTimeOfTaking().getTime() >= nowDate.getTime()) {
-                    newTreatmentList.add(t);
-                //}
 
+                Date now = new Date();
+                Date treatmentDate = new Date();
+                treatmentDate.setHours(t.getTimeOfTaking().getHours());
+                treatmentDate.setMinutes(t.getTimeOfTaking().getMinutes());
+                treatmentDate.setSeconds(t.getTimeOfTaking().getSeconds());
+
+                if (treatmentDate.after(now)) {
+                    newTreatmentList.add(t);
+                }
             }
         }
         return newTreatmentList;
@@ -498,8 +503,6 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
             cv.put(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
             cv.put(Contract.TreatmentEntry.COLUMN_USER_ID, treatment.getUser().getId());
 
-            //Medicine medicine = findMedicineByName(treatment.getMedicine().getName());
-
             ContentValues contentValues = new ContentValues();
             contentValues.put(Contract.MedicineEntry.COLUMN_NAME, treatment.getMedicine().getName());
             contentValues.put(Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE, treatment.getMedicine().getActiveSubstance());
@@ -507,11 +510,6 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
             contentValues.put(Contract.MedicineEntry.COLUMN_PERIODICITY, treatment.getMedicine().getPeriodicityInDays());
 
             synchronized (db) {
-                /*db.update(Contract.TreatmentEntry.TABLE_NAME, cv,
-                        Contract.TreatmentEntry.COLUMN_MEDICINE_ID + "=" + treatment.getMedicine().getId() +
-                        " and " + Contract.TreatmentEntry.COLUMN_USER_ID + "=" + treatment.getUser().getId(),
-                        null);*/
-
                 db.update(Contract.MedicineEntry.TABLE_NAME,
                         contentValues,
                         Contract.MedicineEntry._ID + " = ?",
@@ -526,7 +524,6 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    //Dawei ist nur ein User in Verwendung, später können dann mehrere User angelegt werden
     public long findCurrentUserId()
     {
         try (SQLiteDatabase db = this.getReadableDatabase()) {
@@ -541,8 +538,7 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
                     null);
 
             cursor.moveToFirst();
-            long id = cursor.getInt(cursor.getColumnIndex(Contract.UserEntry._ID));
-            return id;
+            return cursor.getInt(cursor.getColumnIndex(Contract.UserEntry._ID));
         } catch (Exception e) {
             e.printStackTrace();
             return -1;
@@ -571,7 +567,5 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
                     Contract.UserEntry._ID + " = ?",
                     new String[]{changeUserId + ""});
         }
-
-
     }
 }
