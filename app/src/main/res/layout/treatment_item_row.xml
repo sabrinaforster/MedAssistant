@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true">
+
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/cardView"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="8">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="20dp"
+                android:orientation="vertical"
+                android:layout_weight="7">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/medType"
+                        android:textStyle="italic"/>
+                </LinearLayout>
+
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/medicine_name"
+                        android:id="@+id/lableMedicineName"
+                        android:textStyle="bold"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Text"
+                        android:id="@+id/tvmedicineName"
+                        android:layout_toRightOf="@id/lableMedicineName"
+                        android:textStyle="bold"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/periodicityInDays"
+                        android:id="@+id/lablePeriodicityInDays"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Text"
+                        android:id="@+id/tvPeriodicityInDays"
+                        android:layout_toRightOf="@id/lableMedicineName"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/start_date"
+                        android:id="@+id/lableStartDate"
+                        android:layout_below="@id/lableMedicineName"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Text"
+                        android:id="@+id/tvStartDate"
+                        android:layout_below="@id/tvmedicineName"
+                        android:layout_toRightOf="@id/lableStartDate"
+                        android:layout_weight="1"
+                        android:textAlignment="textEnd" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/end_date"
+                        android:id="@+id/lableEnddate"
+                        android:layout_weight="1"
+                        android:layout_below="@id/lableStartDate"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Text"
+                        android:id="@+id/tvEndDate"
+                        android:layout_weight="1"
+                        android:layout_below="@id/tvStartDate"
+                        android:layout_toRightOf="@id/lableEnddate"
+                        android:textAlignment="textEnd" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/timeOfTaking"
+                        android:id="@+id/lableTimeOfTaking"
+                        android:layout_weight="1"
+                        android:layout_below="@id/lableEnddate"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Text"
+                        android:id="@+id/tvTimeOfTaking"
+                        android:layout_weight="1"
+                        android:layout_below="@id/tvEndDate"
+                        android:layout_toRightOf="@id/lableTimeOfTaking"
+                        android:textAlignment="textEnd" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/popupmenubutton"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:background="@drawable/ic_more_vert_black_24dp"
+                android:layout_alignParentTop="true"
+                android:layout_width="55dp"
+                android:layout_weight="1"/>
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+
+
+</LinearLayout>

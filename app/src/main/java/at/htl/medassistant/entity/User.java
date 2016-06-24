@@ -12,23 +12,25 @@ public class User implements Parcelable {
     private long id;
     private String firstName;
     private String lastName;
+    private boolean currentUser;
 
-    public User(long id, String firstName, String lastName) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
+    protected User(Parcel in) {
+        id = in.readLong();
+        firstName = in.readString();
+        lastName = in.readString();
     }
 
-    public User(String firstName, String lastName) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-    }
+    public static final Creator<User> CREATOR = new Creator<User>() {
+        @Override
+        public User createFromParcel(Parcel in) {
+            return new User(in);
+        }
 
-    public User(Parcel source) {
-        id = source.readLong();
-        firstName = source.readString();
-        lastName = source.readString();
-    }
+        @Override
+        public User[] newArray(int size) {
+            return new User[size];
+        }
+    };
 
     //region Getter and Setter
     public long getId() {
@@ -54,9 +56,30 @@ public class User implements Parcelable {
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
+
+    public boolean isCurrentUser() {
+        return currentUser;
+    }
+
+    public void setCurrentUser(boolean currentUser) {
+        this.currentUser = currentUser;
+    }
+
     //endregion
 
 
+    public User(long id, String firstName, String lastName) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.currentUser = false;
+    }
+
+    public User(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.currentUser = false;
+    }
 
     @Override
     public String toString() {
@@ -75,18 +98,6 @@ public class User implements Parcelable {
         dest.writeString(lastName);
     }
 
-    public static final Creator<User> CREATOR = new Creator<User>() {
-        @Override
-        public User createFromParcel(Parcel source) {
-            return new User(source);
-        }
-
-        @Override
-        public User[] newArray(int size) {
-            return new User[size];
-        }
-    };
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -95,16 +106,17 @@ public class User implements Parcelable {
         User user = (User) o;
 
         if (id != user.id) return false;
-        if (!firstName.equals(user.firstName)) return false;
-        return lastName.equals(user.lastName);
+        if (firstName != null ? !firstName.equals(user.firstName) : user.firstName != null)
+            return false;
+        return lastName != null ? lastName.equals(user.lastName) : user.lastName == null;
 
     }
 
     @Override
     public int hashCode() {
         int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + firstName.hashCode();
-        result = 31 * result + lastName.hashCode();
+        result = 31 * result + (firstName != null ? firstName.hashCode() : 0);
+        result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
         return result;
     }
 }

@@ -18,6 +18,50 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".MedicineDetailsActivity" />
+
+        <service android:name=".LocalService" />
+
+        <receiver android:name=".AlarmReceiver" />
+        <!--
+ ATTENTION: This was auto-generated to add Google Play services to your project for
+     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.
+        -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.htl.medassistant.MainActivity" />
+        </activity>
+        <activity
+            android:name=".UserActivity"
+            android:label="@string/title_activity_user"
+            android:parentActivityName=".SettingsActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.htl.medassistant.SettingsActivity" />
+        </activity>
+        <activity
+            android:name=".AddUserActivity"
+            android:label="@string/title_activity_add_user"
+            android:parentActivityName=".UserActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="at.htl.medassistant.UserActivity" />
+        </activity>
+        <activity
+            android:name=".NotificationScreen"
+            android:label="@string/title_activity_notification_screen"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

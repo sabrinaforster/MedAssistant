@@ -8,7 +8,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import java.sql.SQLDataException;
+import java.sql.Time;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 import at.htl.medassistant.entity.MedType;
 import at.htl.medassistant.entity.Medicine;
@@ -16,6 +22,15 @@ import at.htl.medassistant.entity.Treatment;
 import at.htl.medassistant.entity.User;
 
 /**
+ *
+ * Die Klasse MedicineDatabseHelper ist als Singleton zu implementieren.
+ * Dabei hält dieses Singleton-Objekt genau eine Instanz vom Typ SQLiteDatabase
+ *         static SQLiteDatabase mDb;
+ * Dieses Database-Objekt wird für Schreibzugriffe verwendet --> getWritableDatabase()
+ * Für Lesezugriffe wird jedesmal eine Nur-Lese-Datenbankobjekt erzeugt --> getReadableDatabase()
+ *
+ * Die Daen werden im Format dd.MM.yyyy n der DB gespeichert
+ *
  * @see <a href="https://cmanios.wordpress.com/2012/05/17/extend-sqliteopenhelper-as-a-singleton-class-in-android/">cmanios: Extend SQLiteOpenHelper as a singleton class in Android</a>
  */
 public class MedicineDatabaseHelper extends SQLiteOpenHelper {
@@ -23,25 +38,32 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
     private static final String LOG_TAG = MedicineDatabaseHelper.class.getSimpleName();
 
     private static final int DATABASE_VERSION = 1;
-    static final String DATABASE_NAME = "medicine_db";
-    private static MedicineDatabaseHelper mInstance;
+    static final String DATABASE_NAME = "medicine.sqlite";
     static SQLiteDatabase mDb;
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
+
+    private static MedicineDatabaseHelper instance;
 
     private MedicineDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    public static synchronized MedicineDatabaseHelper getInstance(Context context) {
-        if (mInstance == null) {
-            mInstance = new MedicineDatabaseHelper(context);
+    public static MedicineDatabaseHelper getInstance(Context context){
+        if (instance == null) {
+            instance = new MedicineDatabaseHelper(context);
         }
-        return mInstance;
+        return instance;
     }
 
+    /**
+     * Wenn mDb null ist oder geschlossen ist dieser Instanzvariablen eine neue
+     * schreibfähige DB zugewiesen, ansonsten wird nur die Instanzvarianle zurückgegeben
+     *        ... super.getWritableDatabase();
+     *
+     * @return database
+     */
     @Override
     public SQLiteDatabase getWritableDatabase() {
-        if ((mDb == null) || (!mDb.isOpen())) {
+        if ((mDb == null)||(!mDb.isOpen())) {
             mDb = super.getWritableDatabase();
         }
         return mDb;
@@ -75,80 +97,101 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
 
         Log.d(LOG_TAG, Contract.SQL_CREATE_USER_TABLE);
         db.execSQL(Contract.SQL_CREATE_USER_TABLE);
-
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + Contract.MedicineEntry.TABLE_NAME);
-        onCreate(db);
     }
 
     /**
-     * stores user in db
+     * stores user in db   --> Verwendung von insertOrThrow(...)
      *
      * @param user
      * @return generated id
      */
     public long insertUser(User user) {
-        SQLiteDatabase db = getWritableDatabase();
 
-        ContentValues values = new ContentValues();
-        values.put(Contract.UserEntry.COLUMN_FIRST_NAME, user.getFirstName());
-        values.put(Contract.UserEntry.COLUMN_LAST_NAME, user.getLastName());
-        return db.insertOrThrow(Contract.UserEntry.TABLE_NAME, null, values);
+        if (findCurrentUserId() < 0) {
+            user.setCurrentUser(true);
+        }
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(Contract.UserEntry.COLUMN_FIRST_NAME, user.getFirstName());
+        contentValues.put(Contract.UserEntry.COLUMN_LAST_NAME, user.getLastName());
+
+        if (user.isCurrentUser()) {
+            contentValues.put(Contract.UserEntry.COLUMN_CURRENT_USER, "1");
+        } else {
+            contentValues.put(Contract.UserEntry.COLUMN_CURRENT_USER, "0");
+        }
+
+        return db.insertOrThrow(Contract.UserEntry.TABLE_NAME, null, contentValues);
     }
 
+
+    /**
+     *
+     * stores medicine in db   --> Verwendung von insertOrThrow(...)
+     *
+     * @param medicine
+     * @return
+     */
     public long insertMedicine(Medicine medicine) {
         SQLiteDatabase db = getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(Contract.MedicineEntry.COLUMN_NAME, medicine.getName());
+        contentValues.put(Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE, medicine.getActiveSubstance());
+        contentValues.put(Contract.MedicineEntry.COLUMN_MED_TYPE, medicine.getMedType().toString());
+        contentValues.put(Contract.MedicineEntry.COLUMN_PERIODICITY, medicine.getPeriodicityInDays());
 
-        ContentValues values = new ContentValues();
-        values.put(Contract.MedicineEntry.COLUMN_NAME, medicine.getName());
-        values.put(Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE, medicine.getActiveSubstance());
-        values.put(Contract.MedicineEntry.COLUMN_MED_TYPE, medicine.getMedType().name());
-        values.put(Contract.MedicineEntry.COLUMN_PERIODICITY, medicine.getPeriodicityInDays());
-        return db.insertOrThrow(Contract.MedicineEntry.TABLE_NAME, null, values);
+        return db.insertOrThrow(Contract.MedicineEntry.TABLE_NAME, null, contentValues);
     }
 
+    /**
+     *
+     * Hier wird zunächst überprüft, ob User und Medicine vorhanden sind, wenn nicht werden
+     * entsprechende Exceptions geworfen (siehe InstrumentationTest)
+     *    --> Verwendung von insertOrThrow(...)
+     *
+     * @param treatment
+     * @return generierte id des erstellten Datensatzes
+     * @throws SQLDataException
+     */
     public long insertTreatment(Treatment treatment) throws SQLDataException {
+        Medicine medicine = findMedicineByName(treatment.getMedicine().getName());
+        User user = findUserByName(treatment.getUser().getFirstName(), treatment.getUser().getLastName());
 
-        // check if User available in db
-        User u;
-        try {
-            u = findUserById(treatment.getUser().getId());
-        } catch (Exception e) {
-            throw new SQLDataException("User '" + treatment.getUser().toString() + "' not found");
+        if (user == null) {
+            throw new SQLDataException(String.format("User '%s' not found",
+                    treatment.getUser().toString()));
+        }
+        if (medicine == null) {
+            throw new SQLDataException(String.format("Medicine '%s' not found", treatment.getMedicine().getName()));
         }
 
-        // check if Medicine available
-        Medicine m;
-        try {
-            m = findMedicineById(treatment.getMedicine().getId());
-        } catch (Exception e) {
-            throw new SQLDataException("Medicine '" + treatment.getMedicine().getName() + "' not found");
-        }
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(Contract.TreatmentEntry.COLUMN_START_DATE, treatment.getStartDateToString());
+        contentValues.put(Contract.TreatmentEntry.COLUMN_END_DATE, treatment.getEndDateToString());
+        contentValues.put(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
+        contentValues.put(Contract.TreatmentEntry.COLUMN_MEDICINE_ID, medicine.getId());
+        contentValues.put(Contract.TreatmentEntry.COLUMN_USER_ID, user.getId()); //medicineid
 
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues v = new ContentValues();
-        v.put(Contract.TreatmentEntry.COLUMN_START_DATE, sdf.format(treatment.getStartDate()));
-        v.put(Contract.TreatmentEntry.COLUMN_END_DATE, sdf.format(treatment.getEndDate()));
-        v.put(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
-        v.put(Contract.TreatmentEntry.COLUMN_USER_ID, treatment.getUser().getId());
-        v.put(Contract.TreatmentEntry.COLUMN_MEDICINE_ID, treatment.getMedicine().getId());
+        return this.getWritableDatabase().insertOrThrow(Contract.TreatmentEntry.TABLE_NAME, null, contentValues);
 
-        return db.insertOrThrow(Contract.TreatmentEntry.TABLE_NAME, null, v);
     }
 
     public User findUserById(long id) {
-        try (SQLiteDatabase db = getReadableDatabase()) {
+        try (SQLiteDatabase db = this.getReadableDatabase()) {
             Cursor cursor = db.query(
-                    Contract.UserEntry.TABLE_NAME,      // Table to Query
-                    null,                               // leaving "columns" null just returns all the columns.
-                    Contract.UserEntry._ID + " = ?",                         // cols for "where" clause
-                    new String[]{String.valueOf(id)},   // values for "where" clause
-                    null,                               // columns to group by
-                    null,                               // columns to filter by row groups
-                    null                                // sort order
+                    Contract.UserEntry.TABLE_NAME,
+                    null,
+                    Contract.UserEntry._ID + " = ?",
+                    new String[]{String.valueOf(id)},
+                    null,
+                    null,
+                    null
             );
 
             if (cursor != null) {
@@ -156,273 +199,379 @@ public class MedicineDatabaseHelper extends SQLiteOpenHelper {
             } else {
                 return null;
             }
+            String firstname = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_FIRST_NAME));
+            String lastname = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_LAST_NAME));
+            String currentUser = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_CURRENT_USER));
 
-            User user = new User(cursor.getLong(0), cursor.getString(1), cursor.getString(2));
+            User user = new User(id, firstname, lastname);
+            if (currentUser.equals("1")) {
+                user.setCurrentUser(true);
+            }
             return user;
+        } catch (Exception e) {
+            return null;
         }
     }
 
+    /**
+     * Verwenden Sie db.query() sowie das AutoClosable-Interface
+     *
+     * @param firstName
+     * @param lastName
+     * @return
+     */
     public User findUserByName(String firstName, String lastName) {
-        try (SQLiteDatabase db = getReadableDatabase()) {
-            Cursor cursor = db.query(
-                    Contract.UserEntry.TABLE_NAME,                      // Table to Query
-                    null,                                               // leaving "columns" null just returns all the columns.
-                    Contract.UserEntry.COLUMN_FIRST_NAME + " = ? AND "
-                            + Contract.UserEntry.COLUMN_LAST_NAME + " = ?",     // cols for "where" clause
-                    new String[]{firstName, lastName},                   // values for "where" clause
-                    null,                                               // columns to group by
-                    null,                                               // columns to filter by row groups
-                    null                                                // sort order
-            );
-
+        String text = Contract.UserEntry.COLUMN_FIRST_NAME + " = ?";
+        try (SQLiteDatabase db = this.getReadableDatabase()) {
+            Cursor cursor = db.query(Contract.UserEntry.TABLE_NAME,
+                    null,
+                    Contract.UserEntry.COLUMN_FIRST_NAME + " = ? and "+Contract.UserEntry.COLUMN_LAST_NAME + " = ?",
+                    new String[]{firstName, lastName},
+                    null,
+                    null,
+                    null);
             if (cursor != null) {
                 cursor.moveToFirst();
             } else {
                 return null;
             }
 
-            User user = new User(cursor.getLong(0), cursor.getString(1), cursor.getString(2));
+            String firstname = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_FIRST_NAME));
+            String lastname = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_LAST_NAME));
+            int id = cursor.getInt(cursor.getColumnIndex(Contract.UserEntry._ID));
+            String currentUser = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_CURRENT_USER));
+
+            User user = new User(id, firstname, lastname);
+            if (currentUser != null && currentUser.equals("1")) {
+                user.setCurrentUser(true);
+            }
+
             return user;
+        }catch (Exception e){
+            return null;
         }
 
     }
 
     public Medicine findMedicineById(long id) {
-        try (SQLiteDatabase db = getReadableDatabase()) {
-            Cursor c = db.query(
-                    Contract.MedicineEntry.TABLE_NAME,      // Table to Query
-                    null,                                   // leaving "columns" null just returns all the columns.
-                    Contract.MedicineEntry._ID + " = ?",    // cols for "where" clause
-                    new String[]{String.valueOf(id)},       // values for "where" clause
-                    null,                                   // columns to group by
-                    null,                                   // columns to filter by row groups
-                    null                                    // sort order
-            );
-
-            if (c != null) {
-                c.moveToFirst();
+        try (SQLiteDatabase db = this.getReadableDatabase()) {
+            Cursor cursor = db.query(
+                    Contract.MedicineEntry.TABLE_NAME,
+                    null,
+                    "_id = ?",
+                    new String[]{String.valueOf(id)},
+                    null,
+                    null,
+                    null);
+            if (cursor != null) {
+                cursor.moveToFirst();
             } else {
                 return null;
             }
+            Medicine medicine = new Medicine();
+            medicine.setId(cursor.getInt(cursor.getColumnIndex("_id")));
+            medicine.setActiveSubstance(cursor.getString(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE)));
+            medicine.setMedType(MedType.valueOf(cursor.getString(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_MED_TYPE))));
+            medicine.setPeriodicityInDays(cursor.getInt(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_PERIODICITY)));
+            medicine.setName(cursor.getString(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_NAME)));
+            return medicine;
 
-            Medicine m = new Medicine(
-                    c.getLong(0),                       // id
-                    c.getString(1),                     // name
-                    c.getString(2),                     // activeSubstance
-                    MedType.valueOf(c.getString(3)),    // medType
-                    c.getInt(4));                       // perioicity
-            return m;
+        } catch (Exception e) {
+            return null;
         }
-
     }
 
     public Medicine findMedicineByName(String name) {
-        try (SQLiteDatabase db = getReadableDatabase()) {
-            Cursor c = db.query(
-                    Contract.MedicineEntry.TABLE_NAME,              // Table to Query
-                    null,                                           // leaving "columns" null just returns all the columns.
-                    Contract.MedicineEntry.COLUMN_NAME + " = ?",    // cols for "where" clause
-                    new String[]{name},                             // values for "where" clause
-                    null,                                           // columns to group by
-                    null,                                           // columns to filter by row groups
-                    null                                            // sort order
-            );
-
-            if (c != null) {
-                c.moveToFirst();
+        try (SQLiteDatabase db = this.getReadableDatabase()) {
+            Cursor cursor = db.query(
+                    Contract.MedicineEntry.TABLE_NAME,
+                    null,
+                    Contract.MedicineEntry.COLUMN_NAME+" = ?",
+                    new String[]{String.valueOf(name)},
+                    null,
+                    null,
+                    null);
+            if (cursor != null) {
+                cursor.moveToFirst();
             } else {
                 return null;
             }
+            Medicine medicine = new Medicine();
+            medicine.setId(cursor.getInt(cursor.getColumnIndex("_id")));
+            medicine.setActiveSubstance(cursor.getString(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE)));
+            medicine.setMedType(MedType.valueOf(cursor.getString(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_MED_TYPE))));
+            medicine.setPeriodicityInDays(cursor.getInt(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_PERIODICITY)));
+            medicine.setName(cursor.getString(cursor.getColumnIndex(Contract.MedicineEntry.COLUMN_NAME)));
+            return medicine;
 
-            Medicine m = new Medicine(
-                    c.getLong(0),                       // id
-                    c.getString(1),                     // name
-                    c.getString(2),                     // activeSubstance
-                    MedType.valueOf(c.getString(3)),    // medType
-                    c.getInt(4));                       // perioicity
-            return m;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    //11.06.2016 Forster
+    public List<Treatment> getTreatments(){
+        long currentUserId = findCurrentUserId();
+        try (SQLiteDatabase db = this.getReadableDatabase()) {
+
+            Cursor cursor = db.query(
+                    Contract.TreatmentEntry.TABLE_NAME,
+                    null,
+                    Contract.TreatmentEntry.COLUMN_USER_ID + " = ?",
+                    new String[]{String.valueOf(currentUserId)},
+                    null,
+                    null,
+                    null);
+            if (cursor != null) {
+                cursor.moveToFirst();
+            } else {
+                return null;
+            }
+            List<Treatment> treatments = new ArrayList<>();
+            while (cursor.isAfterLast() == false) {
+                int medicieId = cursor.getInt(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_MEDICINE_ID));
+                Medicine medicine = findMedicineById(medicieId);
+
+                int userId = cursor.getInt(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_USER_ID));
+                User user = findUserById(userId);
+
+                String startDate = cursor.getString(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_START_DATE));
+                String endDate = cursor.getString(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_END_DATE));
+                String timeOfTaking = cursor.getString(cursor.getColumnIndex(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING));
+
+                Treatment treatment = new Treatment(user, medicine, startDate, endDate, timeOfTaking);
+                treatments.add(treatment);
+
+                cursor.moveToNext();
+            }
+            return treatments;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public List<User> getUsers() {
+        try (SQLiteDatabase db = this.getReadableDatabase()) {
+
+            Cursor cursor = db.query(
+                    Contract.UserEntry.TABLE_NAME,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
+            if (cursor != null) {
+                cursor.moveToFirst();
+            } else {
+                return null;
+            }
+            List<User> users = new ArrayList<>();
+            while (cursor.isAfterLast() == false) {
+                String firstname = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_FIRST_NAME));
+                String lastname = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_LAST_NAME));
+                long id = cursor.getInt(cursor.getColumnIndex(Contract.UserEntry._ID));
+                String currentUser = cursor.getString(cursor.getColumnIndex(Contract.UserEntry.COLUMN_CURRENT_USER));
+
+                User user = new User(id, firstname, lastname);
+                if (currentUser == null || currentUser.equals("1")) {
+                    user.setCurrentUser(true);
+                }
+                users.add(user);
+                cursor.moveToNext();
+            }
+            return users;
+        }
+    }
+
+    //14.06.2016 Forster
+    public Treatment getNextTreatment() {
+        try {
+            Calendar c = Calendar.getInstance();
+            List<Treatment> treatmentList = getTreatments();
+            if(treatmentList.size() > 0)
+            {
+                treatmentList = getListToday(treatmentList, c);
+
+                Time nowTime = new Time(c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND));
+
+                boolean checkTimeIsBefore = false;
+                boolean checkNextNotificationTomorrow = false;
+                long treatmentId = -1;
+
+                if(treatmentList.size() > 0){
+                    Collections.sort(treatmentList);
+                    if(treatmentList.size() == 1)
+                    {
+                        return treatmentList.get(0);
+                    }
+                    for(Treatment t : treatmentList){
+
+                        if(t.getTimeOfTaking().before(nowTime)){
+                            checkTimeIsBefore = true;
+                            treatmentId++;
+                        }
+                        else
+                        {
+                            treatmentId++;
+                            checkTimeIsBefore = false;
+                            checkNextNotificationTomorrow = true;
+                            break;
+                        }
+                    }
+                    if(checkNextNotificationTomorrow == false){ //dann ist die nächste Erinnerung morgen
+                        treatmentId = 0;
+                    }
+                    return treatmentList.get((int)treatmentId);
+                }
+            }
+        }catch (Exception e){
+            return null;
+        }
+        return null;
+    }
+
+    private List<Treatment> getListToday(List<Treatment> treatmentList, Calendar c) {
+        Date nowDate = new Date(c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+        nowDate.setYear(116);
+        //Date nowDate = new Date(2016, 4, 16);
+        List<Treatment> newTreatmentList = new ArrayList<>();
+        for(Treatment t: treatmentList){
+            if(t.getStartDate().before(nowDate) && nowDate.before(t.getEndDate()) ||
+                    sameDate(t.getStartDate(),nowDate) ||
+                    sameDate(t.getEndDate(), nowDate)){
+                //if (t.getTimeOfTaking().getTime() >= nowDate.getTime()) {
+                    newTreatmentList.add(t);
+                //}
+
+            }
+        }
+        return newTreatmentList;
+    }
+
+    private boolean sameDate(Date startDateInDate, Date nowDate) {
+        if(startDateInDate.getDate() == nowDate.getDate() && startDateInDate.getMonth() == nowDate.getMonth()) // && startDateInDate.getYear() == nowDate.getYear()
+            return true;
+        return false;
+    }
+
+    //11.06.2016 Forster
+    public boolean deleteTreatmentById(int position) {
+        Treatment treatment = getTreatments().get(position);
+
+        try (SQLiteDatabase db = this.getWritableDatabase()){
+            db.delete(Contract.TreatmentEntry.TABLE_NAME,
+                    Contract.TreatmentEntry.COLUMN_MEDICINE_ID + " = ?" + " and " +
+                            Contract.TreatmentEntry.COLUMN_USER_ID + " = ?",
+                    new String[]{String.valueOf(treatment.getMedicine().getId()),
+                            String.valueOf(treatment.getUser().getId())});
+        } catch (Exception e) {
+            return false;
+        }
+
+        //Contract.TreatmentEntry.COLUMN_MEDICINE_ID + " = " + tratment.getMedicine().getId() + " and " + Contract.TreatmentEntry.COLUMN_USER_ID + " = " + tratment.getUser().getId()
+        return true;
+    }
+
+    public boolean deleteTreatmentByUserMedicine(long userId, String medicineName ){
+         Medicine medicine = findMedicineByName(medicineName);
+
+        try (SQLiteDatabase db = this.getWritableDatabase()){
+            db.delete(Contract.TreatmentEntry.TABLE_NAME,
+                    Contract.TreatmentEntry.COLUMN_MEDICINE_ID + " = ?" + " and " +
+                            Contract.TreatmentEntry.COLUMN_USER_ID + " = ?",
+                    new String[]{String.valueOf(medicine.getId()),
+                            String.valueOf(userId)});
+        } catch (Exception e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public void updateTreatment(Treatment treatment){
+        try (SQLiteDatabase db = this.getWritableDatabase()) {
+            ContentValues cv = new ContentValues();
+            cv.put(Contract.TreatmentEntry.COLUMN_END_DATE, treatment.getEndDateToString());
+            cv.put(Contract.TreatmentEntry.COLUMN_MEDICINE_ID, treatment.getMedicine().getId());
+            cv.put(Contract.TreatmentEntry.COLUMN_START_DATE, treatment.getStartDateToString());
+            cv.put(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
+            cv.put(Contract.TreatmentEntry.COLUMN_USER_ID, treatment.getUser().getId());
+
+            //Medicine medicine = findMedicineByName(treatment.getMedicine().getName());
+
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(Contract.MedicineEntry.COLUMN_NAME, treatment.getMedicine().getName());
+            contentValues.put(Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE, treatment.getMedicine().getActiveSubstance());
+            contentValues.put(Contract.MedicineEntry.COLUMN_MED_TYPE, treatment.getMedicine().getMedType().toString());
+            contentValues.put(Contract.MedicineEntry.COLUMN_PERIODICITY, treatment.getMedicine().getPeriodicityInDays());
+
+            synchronized (db) {
+                /*db.update(Contract.TreatmentEntry.TABLE_NAME, cv,
+                        Contract.TreatmentEntry.COLUMN_MEDICINE_ID + "=" + treatment.getMedicine().getId() +
+                        " and " + Contract.TreatmentEntry.COLUMN_USER_ID + "=" + treatment.getUser().getId(),
+                        null);*/
+
+                db.update(Contract.MedicineEntry.TABLE_NAME,
+                        contentValues,
+                        Contract.MedicineEntry._ID + " = ?",
+                        new String[]{treatment.getMedicine().getId() + ""});
+
+                db.update(Contract.TreatmentEntry.TABLE_NAME,
+                        cv,
+                        Contract.TreatmentEntry.COLUMN_MEDICINE_ID + " = ? and " +
+                                Contract.TreatmentEntry.COLUMN_USER_ID + " = ?",
+                        new String[]{treatment.getMedicine().getId() + "", treatment.getUser().getId() + ""});
+            }
+        }
+    }
+
+    //Dawei ist nur ein User in Verwendung, später können dann mehrere User angelegt werden
+    public long findCurrentUserId()
+    {
+        try (SQLiteDatabase db = this.getReadableDatabase()) {
+
+            Cursor cursor = db.query(
+                    Contract.UserEntry.TABLE_NAME,
+                    null,
+                    Contract.UserEntry.COLUMN_CURRENT_USER + " = ?",
+                    new String[]{"1"},
+                    null,
+                    null,
+                    null);
+
+            cursor.moveToFirst();
+            long id = cursor.getInt(cursor.getColumnIndex(Contract.UserEntry._ID));
+            return id;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public void changeCurrentUserToOtherUser(long changeUserId) {
+        long currentUserId = findCurrentUserId();
+
+        try (SQLiteDatabase db = this.getWritableDatabase()) {
+            ContentValues cv = new ContentValues();
+            cv.put(Contract.UserEntry.COLUMN_CURRENT_USER, "0");
+
+            db.update(Contract.UserEntry.TABLE_NAME,
+                    cv,
+                    Contract.UserEntry._ID + " = ?",
+                    new String[]{currentUserId + ""});
+        }
+
+        try (SQLiteDatabase db = this.getWritableDatabase()) {
+            ContentValues cv = new ContentValues();
+            cv.put(Contract.UserEntry.COLUMN_CURRENT_USER, "1");
+
+            db.update(Contract.UserEntry.TABLE_NAME,
+                    cv,
+                    Contract.UserEntry._ID + " = ?",
+                    new String[]{changeUserId + ""});
         }
 
 
     }
-
-
-//    public List<Treatment> getTreatment(){
-//
-//        List<Treatment> treatmentList = new LinkedList<>();
-//
-//        //bekommt man alle Treatments
-//        String sqlStatement = "SELECT " +
-//                Contract.TreatmentEntry.COLUMN_MEDICINE_ID + ", " +
-//                Contract.TreatmentEntry.COLUMN_START_DATE + ", " +
-//                Contract.TreatmentEntry.COLUMN_END_DATE +", " +
-//                Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING + ","+
-//                Contract.TreatmentEntry.COLUMN_USER_ID + ", " +
-//                Contract.TreatmentEntry.COLUMN_DELETE_ROW + ", " +
-//                Contract.TreatmentEntry._ID +
-//                " FROM " + Contract.TreatmentEntry.TABLE_NAME +
-//                " WHERE " + Contract.TreatmentEntry.COLUMN_DELETE_ROW + " = 0";
-//
-//
-//        Cursor cursor = mDb.rawQuery(sqlStatement, null);
-//
-//        int i = 0;
-//        if (null != cursor) {
-//            while ((cursor.moveToNext())){
-//                long medicineId = cursor.getLong(0);
-//                String startdate = cursor.getString(1);
-//                String enddate = cursor.getString(2);
-//                String time_of_taking = cursor.getString(3);
-//                int userId = cursor.getInt(4);
-//                int delete_row = cursor.getInt(5);
-//                long id = cursor.getLong(6);
-//
-//                Medicine medicine = null;
-//                if(medicineId > -1 && delete_row == 0) {
-//                    String sqlGetMedicine = "SELECT " +
-//                            Contract.MedicineEntry.COLUMN_NAME + ", " +
-//                            Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE + ", " +
-//                            Contract.MedicineEntry.COLUMN_IS_DRUG + ", " +
-//                            Contract.MedicineEntry._ID +
-//                            " FROM " + Contract.MedicineEntry.TABLE_NAME +
-//                            " WHERE " + Contract.TreatmentEntry._ID + " == " + medicineId;
-//                    //" AND " + Contract.TreatmentEntry.COLUMN_DELETE_ROW + " == 0" ;
-//                    //sqlGetMedicine = "SELECT * FROM " + Contract.MedicineEntry.TABLE_NAME +
-//                    // " WHERE " + Contract.TreatmentEntry.COLUMN_ID + " == " + medicineId;
-//
-//                    Cursor cursorMedicine = mDb.rawQuery(sqlGetMedicine, null);
-//                    while (cursorMedicine.moveToNext()){
-//                        String name = cursorMedicine.getString(0);
-//                        String activeSubstance = cursorMedicine.getString(1);
-//                        Boolean isDrug = (cursorMedicine.getString(2).equals("1"));
-//                        medicineId = cursorMedicine.getLong(3);
-//                        medicine = new Medicine(medicineId,name, activeSubstance, isDrug);
-//
-//                    }
-//                }
-//
-//                treatmentList.add(new Treatment(id, medicine, startdate, enddate, time_of_taking));
-//            }
-//            cursor.close();
-//        }
-//
-//        return treatmentList;
-//    }
-//
-//    public boolean setDeleteTreatment(Treatment treatment) {
-//
-//        //UPDATE table_name SET column1=value1,column2=value2,... WHERE some_column=some_value;
-//        String sqlStatement = "UPDATE " +
-//                Contract.TreatmentEntry.TABLE_NAME + " SET " +
-//                Contract.TreatmentEntry.COLUMN_DELETE_ROW + " = 1 WHERE _id = "+treatment.getId();
-//
-//        //Cursor cursor = mDb.rawQuery(sqlStatement, null);
-//        ContentValues args = new ContentValues();
-//        args.put(Contract.TreatmentEntry.COLUMN_DELETE_ROW, "1");
-//
-//        //mDb.update(Contract.TreatmentEntry.TABLE_NAME, args, "_id=" +treatment.getId(), null);
-//        mDb.execSQL(sqlStatement);
-//
-//        return true;
-//    }
-//
-//    private static Context repoContext;
-//
-//    public static void setContext(Context context){
-//        repoContext = context;
-//    }
-//
-//    public int changeTreatment(Treatment treatment) {
-//
-//        //Update Treatment
-//        ContentValues contentValues = new ContentValues();
-//        contentValues.put(Contract.TreatmentEntry.COLUMN_TIME_OF_TAKING, treatment.getTimeOfTakingToString());
-//        contentValues.put(Contract.TreatmentEntry.COLUMN_END_DATE, treatment.getEndDateToString());
-//        contentValues.put(Contract.TreatmentEntry.COLUMN_START_DATE, treatment.getStartDateToString());
-//
-//        mDb.update(
-//                Contract.TreatmentEntry.TABLE_NAME,
-//                contentValues, "_id = " + treatment.getId(),
-//                null
-//        );
-//
-//        //Update Medicine
-//        ContentValues contentValues1 = new ContentValues();
-//        contentValues1.put(Contract.MedicineEntry.COLUMN_NAME, treatment.getMedicine().getName());
-//        contentValues1.put(Contract.MedicineEntry.COLUMN_ACTIVE_SUBSTANCE, treatment.getMedicine().getActiveSubstance());
-//
-//        return  mDb.update(
-//                Contract.MedicineEntry.TABLE_NAME,
-//                contentValues1,
-//                "_id = "+treatment.getMedicine().getId(),
-//                null
-//        );
-//    }
-//
-//    public Treatment getNextTreatment() {
-//        try {
-//            Calendar c = Calendar.getInstance();
-//            List<Treatment> treatmentList = getTreatment();
-//            if(treatmentList.size() > 0)
-//            {
-//                treatmentList = getListToday(treatmentList, c);
-//
-//                Time nowTime = new Time(c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND));
-//
-//                boolean checkTimeIsBefore = false;
-//                boolean checkNextNotificationTomorrow = false;
-//                long treatmentId = -1;
-//
-//
-//                if(treatmentList.size() > 0){
-//                    Collections.sort(treatmentList);
-//                    if(treatmentList.size() == 1)
-//                    {
-//                        return treatmentList.get(0);
-//                    }
-//                    for(Treatment t : treatmentList){
-//
-//                        if(t.getTimeOfTaking().before(nowTime)){
-//                            checkTimeIsBefore = true;
-//                            treatmentId++;
-//                        }
-//                        else
-//                        {
-//                            treatmentId++;
-//                            checkTimeIsBefore = false;
-//                            checkNextNotificationTomorrow = true;
-//                            break;
-//                        }
-//                    }
-//                    if(checkNextNotificationTomorrow == false){ //dann ist die nächste Erinnerung morgen
-//                        treatmentId = 0;
-//                    }
-//                    return treatmentList.get((int)treatmentId);
-//                }
-//            }
-//        }catch (Exception e){
-//            return null;
-//        }
-//        return null;
-//    }
-//
-//    //alle Treatments von heute
-//    private List<Treatment> getListToday(List<Treatment> treatmentList, Calendar c) {
-//        Date nowDate = new Date(c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
-//        nowDate.setYear(116);
-//        //Date nowDate = new Date(2016, 4, 16);
-//        List<Treatment> newTreatmentList = new ArrayList<>();
-//        for(Treatment t: treatmentList){
-//            if(t.getStartDateInDate().before(nowDate) && nowDate.before(t.getEndDateInDate()) || sameDate(t.getStartDateInDate(),nowDate) || sameDate(t.getEndDateInDate(), nowDate)){
-//                newTreatmentList.add(t);
-//            }
-//        }
-//        return newTreatmentList;
-//    }
-//
-//    private boolean sameDate(Date startDateInDate, Date nowDate) {
-//        if(startDateInDate.getDate() == nowDate.getDate() && startDateInDate.getMonth() == nowDate.getMonth()) // && startDateInDate.getYear() == nowDate.getYear()
-//            return true;
-//        return false;
-//    }
 }

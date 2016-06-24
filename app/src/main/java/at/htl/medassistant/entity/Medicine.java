@@ -7,29 +7,6 @@ public class Medicine {
     private MedType medType;
     private int periodicityInDays;
 
-    //region Constructors
-    public Medicine(long id, String name, String activeSubstance, MedType medType, int periodicityInDays) {
-        this.id = id;
-        this.name = name;
-        this.activeSubstance = activeSubstance;
-        this.medType = medType;
-        this.periodicityInDays = periodicityInDays;
-    }
-
-    public Medicine(String name, String activeSubstance, MedType medType, int periodicityInDays) {
-        this.name = name;
-        this.activeSubstance = activeSubstance;
-        this.medType = medType;
-        this.periodicityInDays = periodicityInDays;
-    }
-
-    public Medicine(String name, String activeSubstance, String medTypeString, int periodicityInDays) {
-        this.name = name;
-        this.activeSubstance = activeSubstance;
-        setMedType(medTypeString);
-        this.periodicityInDays = periodicityInDays;
-    }
-    //endregion
 
     //region Getter and Setter
     public long getId() {
@@ -77,6 +54,32 @@ public class Medicine {
     }
 //endregion
 
+
+    public Medicine() {
+    }
+
+    public Medicine(String name, String activeSubstance, MedType medType, int periodicityInDays) {
+        this.name = name;
+        this.activeSubstance = activeSubstance;
+        this.medType = medType;
+        this.periodicityInDays = periodicityInDays;
+    }
+
+    public Medicine(String name, String activeSubstance, MedType medType) {
+        this.name = name;
+        this.activeSubstance = activeSubstance;
+        this.medType = medType;
+    }
+
+    public Medicine(String name, String activeSubstance, String medType, int periodicityInDays) {
+        this.name = name;
+        this.activeSubstance = activeSubstance;
+        if (medType != "") {
+            this.medType = MedType.valueOf(medType);
+        }
+        this.periodicityInDays = periodicityInDays;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -98,7 +101,10 @@ public class Medicine {
         Medicine medicine = (Medicine) o;
 
         if (id != medicine.id) return false;
-        if (!name.equals(medicine.name)) return false;
+        if (periodicityInDays != medicine.periodicityInDays) return false;
+        if (name != null ? !name.equals(medicine.name) : medicine.name != null) return false;
+        if (activeSubstance != null ? !activeSubstance.equals(medicine.activeSubstance) : medicine.activeSubstance != null)
+            return false;
         return medType == medicine.medType;
 
     }
@@ -106,8 +112,10 @@ public class Medicine {
     @Override
     public int hashCode() {
         int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + name.hashCode();
-        result = 31 * result + medType.hashCode();
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + (activeSubstance != null ? activeSubstance.hashCode() : 0);
+        result = 31 * result + (medType != null ? medType.hashCode() : 0);
+        result = 31 * result + periodicityInDays;
         return result;
     }
 }

@@ -5,45 +5,54 @@ import android.provider.BaseColumns;
 
 public class Contract {
 
-
+    /**
+     * SQL-Statement zum Erstellen der Tabelle Medicine
+     */
     final static String SQL_CREATE_MEDICINE_TABLE =
-            "CREATE TABLE " + Contract.MedicineEntry.TABLE_NAME + " ("
-                    + MedicineEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    + MedicineEntry.COLUMN_NAME + " TEXT NOT NULL, "
-                    + MedicineEntry.COLUMN_ACTIVE_SUBSTANCE + " TEXT, "
-                    + MedicineEntry.COLUMN_MED_TYPE + " STRING NOT NULL, "
-                    + MedicineEntry.COLUMN_PERIODICITY + " INTEGER)";
+            "CREATE TABLE IF NOT EXISTS " +
+                    MedicineEntry.TABLE_NAME + " ("+ MedicineEntry._ID
+                    +" integer primary key autoincrement, " +
+                    MedicineEntry.COLUMN_NAME + " text, " +
+                    MedicineEntry.COLUMN_ACTIVE_SUBSTANCE + " text, " +
+                    MedicineEntry.COLUMN_MED_TYPE + " text, " +
+                    MedicineEntry.COLUMN_PERIODICITY + " text)";
 
-
+    /**
+     * SQL-Statement zum Erstellen der Tabelle Treatment
+     *
+     * Der Primärschlüssel setzt sich aus den Spalten medicine_id und user_id zusammen
+     * Es gibt KEINE Spalte _id
+     *
+     */
     final static String SQL_CREATE_TREATMENT_TABLE =
-            "CREATE TABLE " + Contract.TreatmentEntry.TABLE_NAME + " ("
-                    + TreatmentEntry.COLUMN_MEDICINE_ID + " INTEGER NOT NULL, "
-                    + TreatmentEntry.COLUMN_USER_ID + " INTEGER NOT NULL, "
-                    + TreatmentEntry.COLUMN_START_DATE + " TEXT NOT NULL, "
-                    + TreatmentEntry.COLUMN_END_DATE + " TEXT NOT NULL, "
-                    + TreatmentEntry.COLUMN_TIME_OF_TAKING + " TEXT NOT NULL, "
-                    //+ TreatmentEntry.COLUMN_DELETE_ROW + " INTEGER NOT NULL,"
-                    + "FOREIGN KEY (" + TreatmentEntry.COLUMN_MEDICINE_ID + ") REFERENCES "
-                    + MedicineEntry.TABLE_NAME + " ("
-                    + MedicineEntry._ID + "), "
-                    + "FOREIGN KEY (" + TreatmentEntry.COLUMN_USER_ID + ") REFERENCES "
-                    + UserEntry.TABLE_NAME + " ("
-                    + UserEntry._ID + "), "
-                    + "PRIMARY KEY (" + TreatmentEntry.COLUMN_MEDICINE_ID
-                    + "," + TreatmentEntry.COLUMN_USER_ID + "))";
+            "CREATE TABLE IF NOT EXISTS "+
+                TreatmentEntry.TABLE_NAME + " ("+
+                TreatmentEntry.COLUMN_MEDICINE_ID + " integer, "+
+                TreatmentEntry.COLUMN_USER_ID + " integer, "+
+                TreatmentEntry.COLUMN_START_DATE +" text, "+
+                TreatmentEntry.COLUMN_END_DATE + " text, "+
+                    TreatmentEntry.COLUMN_TIME_OF_TAKING + " text, "+
+                    "primary key (" + TreatmentEntry.COLUMN_MEDICINE_ID +
+                    ", " + TreatmentEntry.COLUMN_USER_ID +"))";
 
 
     /**
+     * SQL-Statement zum Erstellen der Tabelle User
+     * <p/>
+     * Die Kombination aus firstName und lastName muss eindeutig sein!
+     * <p/>
      * http://stackoverflow.com/questions/2701877/sqlite-table-constraint-unique-on-multiple-columns
      * https://www.sqlite.org/lang_conflict.html
      */
     final static String SQL_CREATE_USER_TABLE =
-            "CREATE TABLE " + Contract.UserEntry.TABLE_NAME + " ("
-                    + UserEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    + UserEntry.COLUMN_FIRST_NAME + " TEXT NOT NULL, "
-                    + UserEntry.COLUMN_LAST_NAME + " TEXT NOT NULL, "
-                    + "UNIQUE (" + UserEntry.COLUMN_FIRST_NAME + ", " + UserEntry.COLUMN_LAST_NAME + ") ON CONFLICT FAIL"
-                    + ")";
+            "CREATE TABLE if not exists " +
+                    UserEntry.TABLE_NAME + " ("+
+                    UserEntry._ID + " integer primary key autoincrement, " +
+                    UserEntry.COLUMN_FIRST_NAME + " text, " +
+                    UserEntry.COLUMN_LAST_NAME + " text, " +
+                    UserEntry.COLUMN_CURRENT_USER + " text, " +
+                    "UNIQUE ("+UserEntry.COLUMN_FIRST_NAME + ", "+UserEntry.COLUMN_LAST_NAME+
+                    "))";
 
 
     public static final class MedicineEntry implements BaseColumns {
@@ -66,7 +75,6 @@ public class Contract {
         public static final String COLUMN_START_DATE = "startdate";
         public static final String COLUMN_END_DATE = "enddate";
         public static final String COLUMN_TIME_OF_TAKING = "time_of_taking";
-        //public static final String COLUMN_DELETE_ROW = "delete_row";
     }
 
 
@@ -75,6 +83,7 @@ public class Contract {
 
         public static final String COLUMN_FIRST_NAME = "first_name";
         public static final String COLUMN_LAST_NAME = "last_name";
+        public static final String COLUMN_CURRENT_USER = "current_user";
     }
 
 }

@@ -1,14 +1,19 @@
 package at.htl.medassistant.entity;
 
 import android.util.Log;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import java.sql.Time;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import at.htl.medassistant.MedicineDetailsActivity;
 
 public class Treatment implements Comparable<Treatment> {
 
@@ -22,28 +27,41 @@ public class Treatment implements Comparable<Treatment> {
     private User user;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.GERMAN);
-    private SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm");
+    private SimpleDateFormat timeFormat = new SimpleDateFormat("kk:mm");
     private static final String TIME24HOURS_PATTERN = "([01]?[0-9]|2[0-3]):[0-5][0-9]";
 
-    //region Constructors
-    public Treatment(User user, Medicine medicine, Date startDate, Date endDate, Time timeOfTaking) {
+    public Treatment(Medicine medicine) {
+
+    }
+
+    public Treatment() {
+    }
+
+    public Treatment(User user, Medicine medicine, String startDate, String endDate, String timeOfTaking) {
+        setStartDate(startDate);
+        setEndDate(endDate);
+        setTimeOfTaking(timeOfTaking);
         this.user = user;
+        //medicine.setPeriodicityInDays(getDaysBetween());
         this.medicine = medicine;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.timeOfTaking = timeOfTaking;
+
     }
 
-    public Treatment(String timeOfTaking) {
-        if (!parseTimeOfTaking(timeOfTaking)) {
-            Log.e(TAG, "Treatment: parsing of " + timeOfTaking + " failed!");
-        }
-    }
-    //endregion
+    private int getDaysBetween() {
+        long secondsInMilli = 1000;
+        long minutesInMilli = secondsInMilli * 60;
+        long hoursInMilli = minutesInMilli * 60;
+        long daysInMilli = hoursInMilli * 24;
 
+        long different =  endDate.getTime() - startDate.getTime();
+        return (int)(different /daysInMilli);
+    }
 
     //region Getter and Setter
     public Date getStartDate() {
+        if (startDate == null) {
+            return endDate;
+        }
         return startDate;
     }
 
@@ -51,13 +69,17 @@ public class Treatment implements Comparable<Treatment> {
         this.startDate = startDate;
     }
 
-    public void setStartDate(String hhmm) {
-        if (hhmm.matches(TIME24HOURS_PATTERN)) {
-            try {
-                startDate = dateFormat.parse(hhmm);
-            } catch (ParseException e) {
-                Log.e(TAG, "setStartDate: " + e.getMessage());;
-            }
+    /**
+     * Wandeln Sie den String in ein Datum um
+     *
+     * @param dateString
+     */
+    @Deprecated
+    public void setStartDate(String dateString) {
+        try {
+            this.startDate = dateFormat.parse(dateString);
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
     }
 
@@ -70,6 +92,10 @@ public class Treatment implements Comparable<Treatment> {
     }
 
     public Time getTimeOfTaking() {
+        if (timeOfTaking == null) {
+            Calendar now = Calendar.getInstance();
+            timeOfTaking = new Time(now.getTimeInMillis());
+        }
         return timeOfTaking;
     }
 
@@ -77,20 +103,26 @@ public class Treatment implements Comparable<Treatment> {
         this.timeOfTaking = timeOfTaking;
     }
 
+    /**
+     * Kontrolliert ob die Uhrzeit korrekt ist (mittels Regex)
+     * Anschließend wird der Uhrzeit der Wert zugewiesen
+     * this.timeOfTaking = new Time(timeFormat.parse(timeOfTakingString).getTime());
+     * <p/>
+     * Schlägt das Parsen fehl wird die Uhrzeit nicht verändert
+     *
+     * @param timeOfTakingString
+     * @return
+     */
     // packaged scoped wegen Testen, sonst private
     boolean parseTimeOfTaking(String timeOfTakingString) {
-        Pattern pattern = Pattern.compile(TIME24HOURS_PATTERN);
-        Matcher matcher = pattern.matcher(timeOfTakingString);
-        if (matcher.matches()) {
-            try {
-                // sql.Time wird von util.Date abgeleitet, daher Verwendung eines Konstruktors
-                this.timeOfTaking = new Time(timeFormat.parse(timeOfTakingString).getTime());
-                return true;
-            } catch (ParseException e) {
-                Log.e(TAG, "setTimeOfTaking: " + timeOfTakingString + " --> " + e.getMessage());
-            }
+
+        try {
+            timeFormat.parse(timeOfTakingString);
+            return true;
+        } catch (ParseException e) {
+            return false;
         }
-        return false;
+
     }
 
     public Medicine getMedicine() {
@@ -98,8 +130,8 @@ public class Treatment implements Comparable<Treatment> {
     }
 
     public String getStartDateToString() {
-        String hhmm = dateFormat.format(getStartDate());
-        return hhmm;
+        return dateFormat.format(getStartDate());
+
     }
 
     public String getEndDateToString() {
@@ -107,7 +139,11 @@ public class Treatment implements Comparable<Treatment> {
     }
 
     public String getTimeOfTakingToString() {
-        return new SimpleDateFormat("hh:mm").format(getTimeOfTaking());
+        try {
+            return timeFormat.format(getTimeOfTaking());
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     public void setMedicine(Medicine medicine) {
@@ -123,6 +159,14 @@ public class Treatment implements Comparable<Treatment> {
     }
     //endregion
 
+
+    public Treatment(User user, Medicine medicine, Date startDate, Date endDate, Time timeOfTaking) {
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.timeOfTaking = timeOfTaking;
+        this.medicine = medicine;
+        this.user = user;
+    }
 
     @Override
     public String toString() {
@@ -140,27 +184,29 @@ public class Treatment implements Comparable<Treatment> {
         return sb.toString();
     }
 
-
-    /*@Override
-    public int compare(Treatment treatment2, Treatment treatment1) {
-        return treatment1.getTimeOfTaking().compareTo(treatment2.getTimeOfTaking());
-    }*/
-
     @Override
-    public int compareTo(Treatment o) {
-        int cmp = Long.compare(user.getId(), o.getUser().getId());
+    public int compareTo(Treatment another) {
+        return getMedicine().getName().compareTo(another.getMedicine().getName());
+    }
 
-        if (cmp == 0) {
-            return Long.compare(medicine.getId(), o.getMedicine().getId());
-        } else {
-            return cmp;
+    public void setEndDate(String s) {
+        try {
+            this.endDate = dateFormat.parse(s);
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
     }
 
-    // @Override
-    // public boolean equals(Object o) {
-    //    return  this.getTimeOfTakinginTime().equals(((Treatment) o).getTimeOfTakinginTime());
-    // }
+    public void setTimeOfTaking(String s) {
+        try {
+            Date date = timeFormat.parse(s);
 
+            Time time = new Time(date.getHours(), date.getMinutes(), date.getMinutes());
 
+            this.timeOfTaking = time;
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
 }
+
