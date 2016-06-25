@@ -181,16 +181,25 @@ public class Treatment implements Comparable<Treatment> {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(user.toString());
-        sb.append(": ");
-        sb.append(medicine.getName());
+        if (user != null) {
+            sb.append(user.toString());
+            sb.append(": ");
+        }
+
+        if (medicine != null) {
+            sb.append(medicine.getName());
+        }
+
         if (startDate != null) {
             sb.append(", vom " + dateFormat.format(startDate));
         }
         if (endDate != null) {
             sb.append(" bis " + dateFormat.format(endDate));
         }
-        sb.append(", Time of Taking: " + timeFormat.format(timeOfTaking));
+        if (timeOfTaking != null) {
+            sb.append(", Time of Taking: " + timeFormat.format(timeOfTaking));
+        }
+
         return sb.toString();
     }
 
@@ -228,6 +237,42 @@ public class Treatment implements Comparable<Treatment> {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Treatment treatment = (Treatment) o;
+
+        if (startDate != null ? !startDate.equals(treatment.startDate) : treatment.startDate != null)
+            return false;
+        if (endDate != null ? !endDate.equals(treatment.endDate) : treatment.endDate != null)
+            return false;
+        if (timeOfTaking != null ? !timeOfTaking.equals(treatment.timeOfTaking) : treatment.timeOfTaking != null)
+            return false;
+        if (note != null ? !note.equals(treatment.note) : treatment.note != null) return false;
+        if (medicine != null ? !medicine.equals(treatment.medicine) : treatment.medicine != null)
+            return false;
+        if (user != null ? !user.equals(treatment.user) : treatment.user != null) return false;
+        if (dateFormat != null ? !dateFormat.equals(treatment.dateFormat) : treatment.dateFormat != null)
+            return false;
+        return timeFormat != null ? timeFormat.equals(treatment.timeFormat) : treatment.timeFormat == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = startDate != null ? startDate.hashCode() : 0;
+        result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
+        result = 31 * result + (timeOfTaking != null ? timeOfTaking.hashCode() : 0);
+        result = 31 * result + (note != null ? note.hashCode() : 0);
+        result = 31 * result + (medicine != null ? medicine.hashCode() : 0);
+        result = 31 * result + (user != null ? user.hashCode() : 0);
+        result = 31 * result + (dateFormat != null ? dateFormat.hashCode() : 0);
+        result = 31 * result + (timeFormat != null ? timeFormat.hashCode() : 0);
+        return result;
     }
 }
 

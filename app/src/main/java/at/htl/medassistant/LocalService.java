@@ -14,8 +14,11 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.widget.Toast;
 
+import com.google.android.gms.phenotype.Flag;
+
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 import at.htl.medassistant.entity.Treatment;
 import at.htl.medassistant.model.MedicineDatabaseHelper;
@@ -25,8 +28,9 @@ public class LocalService extends Service{
     private int NOTIFICATION = 1;
 
     private final IBinder binder = new LocalBinder();
-
     private MedicineDatabaseHelper db;
+
+    public static String TREATMENT_INDEX = "treatment_index";
 
     public class LocalBinder extends Binder {
         LocalService getService(){return LocalService.this;}
@@ -62,12 +66,15 @@ public class LocalService extends Service{
     }
 
     public void showNotification() {
-        Intent intent = new Intent(this, NotificationScreen.class);
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
         Treatment treatment = db.getNextTreatment();
 
         if (treatment != null) {
+            int treatmentIndex = getIndexOfTreatment(treatment);
+            Intent intent = new Intent(this, NotificationScreen.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra(TREATMENT_INDEX, treatmentIndex);
+            PendingIntent contentIntent = PendingIntent.getActivity(getBaseContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
             Calendar calender = Calendar.getInstance();
             calender.set(Calendar.HOUR, calender.get(Calendar.HOUR));
             calender.set(Calendar.MINUTE, calender.get(Calendar.MINUTE));
@@ -84,9 +91,19 @@ public class LocalService extends Service{
                     .setSound(alarmSound)
                     .setVibrate(new long[]{1000, 1000})
                     .build();
-
+            //notification.contentIntent = contentIntent;
             notificationManager.notify(NOTIFICATION, notification);
         }
+    }
+
+    private int getIndexOfTreatment(Treatment treatment) {
+        List<Treatment> treatments = db.getTreatments();
+        for (Treatment t : treatments) {
+            if (t.equals(treatment)) {
+                return treatments.indexOf(t);
+            }
+        }
+        return -1;
     }
 
     public void destroyAndCreateNewNotification(){
