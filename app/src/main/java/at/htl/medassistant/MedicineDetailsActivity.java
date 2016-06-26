@@ -103,24 +103,12 @@ public class MedicineDetailsActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 if (startDate.getText().toString().equals("") && endDate.getText().toString().equals("")) {
-                    try {
-                        Date now = new Date();
-                        Date later = new Date();
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.add(Calendar.DATE, Integer.parseInt(periodicityInDays.getText().toString()));
-                        later.setYear(calendar.get(Calendar.YEAR) - 1900);
-                        later.setMonth(calendar.get(Calendar.MONTH));
-                        later.setDate(calendar.get(Calendar.DATE));
-                        Treatment treatment = new Treatment(null, null, now, later, null);
-
-                        startDate.setText(treatment.getStartDateToString());
-                        endDate.setText(treatment.getEndDateToString());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    changeDateByPeriodicity();
                 }
             }
         });
+
+
 
         buttonOptions = (Button) findViewById(R.id.details_options);
         buttonOptions.setOnClickListener(new View.OnClickListener() {
@@ -220,7 +208,6 @@ public class MedicineDetailsActivity extends AppCompatActivity {
         buttonTime.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 DialogFragment timeFragment = new TimePickerFragment();
                 timeFragment.show(getFragmentManager(), "timePicker");
             }
@@ -265,6 +252,29 @@ public class MedicineDetailsActivity extends AppCompatActivity {
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
+    private void changeDateByPeriodicity() {
+        try {
+            Date now = new Date();
+            if (startDate.getText().toString().length() > 0) {
+                Treatment tr = new Treatment();
+                tr.setStartDate(startDate.getText().toString());
+                now = tr.getStartDate();
+            }
+            Date later = new Date();
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.DATE, Integer.parseInt(periodicityInDays.getText().toString()));
+            later.setYear(calendar.get(Calendar.YEAR) - 1900);
+            later.setMonth(calendar.get(Calendar.MONTH));
+            later.setDate(calendar.get(Calendar.DATE));
+            Treatment treatment = new Treatment(null, null, now, later, null);
+
+            startDate.setText(treatment.getStartDateToString());
+            endDate.setText(treatment.getEndDateToString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void checkLabelEnddate() {
         if (endDate.getText().toString().length() == 0) {
             endDate.setError(getString(R.string.endDateError));
@@ -285,13 +295,20 @@ public class MedicineDetailsActivity extends AppCompatActivity {
         }
     }
     private void checkLabelPeriodicityInDays() {
+        try {
+            if (periodicityInDays.getText().toString().length() == 0) {
+                periodicityInDays.setError(getString(R.string.periodicityInDaysError));
+                canSave = false;
+            } else if (Integer.parseInt(periodicityInDays.getText().toString()) < 0) {
+                    periodicityInDays.setError(getString(R.string.periodicityInDaysErrorNotNegative));
+                    canSave = false;
+            } else {
+                    periodicityInDays.setError(null);
+            }
 
-        if (periodicityInDays.getText().toString().length() == 0) {
-            periodicityInDays.setError(getString(R.string.periodicityInDaysError));
+        } catch (Exception e) {
+            periodicityInDays.setError(getString(R.string.periodicityInDaysErrorNotNegative));
             canSave = false;
-        }
-        else {
-            periodicityInDays.setError(null);
         }
     }
 

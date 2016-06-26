@@ -222,15 +222,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        boolean someTreatmentsInList = false;
+        if (treatmentList.size() > 0) {
+            someTreatmentsInList = true;
+        }
         treatmentList.clear();
         if (db.getTreatments() != null) {
             treatmentList.addAll(db.getTreatments());
             adapter.notifyDataSetChanged();
-
         }
 
         try {
-            boundService.destroyAndCreateNewNotification();
+            if (someTreatmentsInList) {
+                boundService.destroyAndCreateNewNotification();
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }

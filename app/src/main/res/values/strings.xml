@@ -45,5 +45,6 @@
     <string name="notification_content">Choose Later or Taken</string>
     <string name="hint_notes">Notes</string>
     <string name="note">Note</string>
+    <string name="periodicityInDaysErrorNotNegative">Periodicity in days is a positive number.</string>
 
 </resources>

@@ -130,9 +130,9 @@ public class LocalService extends Service{
 
     @Override
     public void onDestroy() {
-        notificationManager.cancel(NOTIFICATION);
+        notificationManager.cancelAll();
 
-        Toast.makeText(this, "Local Service stopped!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Local Notification stopped!", Toast.LENGTH_SHORT).show();
     }
 
     @Nullable
